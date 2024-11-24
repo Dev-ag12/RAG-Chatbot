@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/google": "^1.0.3",
     "@datastax/astra-db-ts": "^1.1.0",
     "@google/generative-ai": "^0.21.0",
     "ai": "^3.4.33",

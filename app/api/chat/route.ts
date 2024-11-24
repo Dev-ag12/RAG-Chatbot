@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { streamText, StreamData } from "ai";
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { DataAPIClient } from "@datastax/astra-db-ts"
 
 const ASTRA_DB_NAMESPACE = process.env.ASTRA_DB_NAMESPACE as string;
@@ -14,10 +15,8 @@ const db=client.db(ASTRA_DB_ENDPOINT,{namespace:ASTRA_DB_NAMESPACE})
 
 export async function POST(req:Request){
     try{
-        // const data = new StreamData();
         const {messages}=await req.json()
         const latestMessage=messages[messages?.length-1]?.content
-        // data.append({ status: "Processing request" });
 
         let docContext=""
         const model = genAI.getGenerativeModel({ model: "text-embedding-004"})
@@ -41,7 +40,7 @@ export async function POST(req:Request){
         }
         
         const template = {
-            role: "system",
+            role: "user",
             content: `You are an AI assistant who knows everything about Formula One. 
                 Use the below context to augment what you know about Formula One racing. 
                 The context will provide you with the most recent page data from Wikipedia, 
@@ -56,14 +55,16 @@ export async function POST(req:Request){
                 END CONTEXT
                 ---------------------`
         }
-        const response =await openai.chat.completions.create({
-            model:"gpt-4",
-            stream:true,
+        const data = new StreamData();
+        const google=createGoogleGenerativeAI({apiKey:GEMINI_API_KEY})
+        const text = await streamText({
+            model: google('gemini-1.5-pro-latest'),
+            onFinish(){
+                data.close();
+            },
             messages:[template, ...messages]
         })
-
-        const stream=OpenAIStream(response)
-        return new streamText.toDataStreamResponse(stream) 
+        return text.toDataStreamResponse({ data });
 
       
     }catch(err){
